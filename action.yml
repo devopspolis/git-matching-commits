@@ -1,6 +1,6 @@
-name: Git Matching Commits
+name: Get Commits by PR Label
 description: |
-  Finds Matching commits between two refs, expanding merge and squash PRs.
+  Finds commits between two refs where the PR has a matching label, expanding merge and squash PRs.
 
 author: Rick Meneely <rick@meneely.com>
 
