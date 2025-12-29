@@ -1,0 +1,103 @@
+name: Git Matching Commits
+description: |
+  Finds Matching commits between two refs, expanding merge and squash PRs.
+
+author: Rick Meneely <rick@meneely.com>
+
+branding:
+  icon: filter
+  color: purple
+
+inputs:
+  repo_path:
+    description: Path to the git repository
+    required: false
+    default: '.'
+
+  start_ref:
+    description: Start git ref (tag, branch, or SHA)
+    required: true
+
+  end_ref:
+    description: End git ref (tag, branch, or SHA)
+    required: true
+
+  github_repository:
+    description: GitHub repository in owner/name form
+    required: true
+
+  github_token:
+    description: GitHub token for API access
+    required: true
+
+  github_labels:
+    description: |
+      Comma-separated list of GitHub PR labels.
+      At least one must be present on the PR.
+    required: false
+    default: hotfix
+
+outputs:
+  commits:
+    description: Space-separated list of commit SHAs
+    value: ${{ steps.run.outputs.commits }}
+
+  count:
+    description: Number of commits found
+    value: ${{ steps.run.outputs.count }}
+
+  first_commit:
+    description: First commit SHA in the list
+    value: ${{ steps.run.outputs.first_commit }}
+
+  last_commit:
+    description: Last commit SHA in the list
+    value: ${{ steps.run.outputs.last_commit }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        pip install -r ${{ github.action_path }}/requirements.txt
+
+    - id: run
+      shell: bash
+      run: |
+        export PYTHONPATH="${{ github.action_path }}:$PYTHONPATH"
+        python - <<'PY'
+        from git_matching_commits import get_matching_commits
+        import os
+
+        labels = "${{ inputs.github_labels }}".split(",") if "${{ inputs.github_labels }}" else ["hotfix"]
+
+        commits = get_matching_commits(
+            repo_path="${{ inputs.repo_path }}",
+            repo_full_name="${{ inputs.github_repository }}",
+            start_ref="${{ inputs.start_ref }}",
+            end_ref="${{ inputs.end_ref }}",
+            github_token="${{ inputs.github_token }}",
+            required_labels=[l.strip() for l in labels]
+        )
+
+        shas = [c.hexsha for c in commits]
+        print(f"commits={' '.join(shas)}")
+        print(f"count={len(shas)}")
+
+        with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write(f"commits={' '.join(shas)}\n")
+            f.write(f"count={len(shas)}\n")
+            if shas:
+                f.write(f"first_commit={shas[0]}\n")
+                f.write(f"last_commit={shas[-1]}\n")
+            else:
+                f.write(f"first_commit=\n")
+                f.write(f"last_commit=\n")
+        PY
+
