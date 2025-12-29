@@ -18,6 +18,23 @@ permissions:
 
 **Important:** The workflow will fail with an AssertionError if the token is empty or missing.
 
+### How It Works
+
+This action **only returns commits that are associated with Pull Requests**. The filtering is based on GitHub PR labels, not commit messages or tags.
+
+**Commits that WILL be returned:**
+- Commits from merged PRs with matching labels
+- Commits from squashed PRs with matching labels
+- All individual commits within a merge PR (if the PR has a matching label)
+
+**Commits that will NOT be returned:**
+- Direct commits to any branch (commits made without a PR)
+- Commits pushed directly via `git push` (bypassing PR workflow)
+- Commits made through GitHub web UI edits (unless done via a PR)
+- Commits with "hotfix" or other keywords in the message but no associated PR
+
+> **Note:** If your workflow includes direct commits to branches, those commits will never be detected by this action, even if they contain matching keywords or are tagged. This is by design since the action relies entirely on GitHub PR labels for filtering.
+
 ### Basic Usage
 ```yaml
     - uses: devopspolis/git-matching-commits@v1

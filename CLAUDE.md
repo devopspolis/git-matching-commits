@@ -77,10 +77,16 @@ pip install -r requirements.txt
 
 ## Important Implementation Details
 
+### PR-Only Filtering (CRITICAL)
+- The action **ONLY** returns commits associated with Pull Requests
+- Direct commits to branches (no PR) are **never** returned, regardless of commit message
+- Filtering is based on GitHub PR labels via the API, not commit message patterns
+- If `get_pr_for_commit()` returns None, the commit is skipped entirely (git_matching_commits.py:27-29)
+
 ### Commit Matching Logic
 - The action matches commits at the **merge/squash PR level**, not individual commit messages
 - If a merged commit has a matching label, **all commits within that PR** are returned
-- This is a v2 behavior change from v1 (see README notice)
+- Labels are checked on the PR object using `pr_has_label()`, not on commit metadata
 
 ### Parent Count Pattern
 The code uses parent count to determine commit type:
